@@ -1,4 +1,4 @@
-import './sass/main.scss';
+// import './sass/main.scss';
 
 
 // const colors = [
@@ -28,19 +28,33 @@ import './sass/main.scss';
 // refs.stop.addEventListener('click', stopColor);
 
 // function changeColor () {
-//     intervalId = setInterval(() => {
-//         refs.body.style.background = getRandomHexColor();
+    //     intervalId = setInterval(() => {
+        //         refs.body.style.background = getRandomHexColor();
 //     }, INTERVAL_DELAY);
 //     refs.start.disabled = true;
 // };
 
 // function stopColor() {
-//     clearInterval(intervalId);
-//     refs.start.disabled = false;
-// }
-
-
-/*
+    //     clearInterval(intervalId);
+    //     refs.start.disabled = false;
+    // }
+    
+    
+    /*
+    * - Пагинация
+    *   - страница и кол-во на странице
+    * - Загружаем статьи при сабмите формы
+    * - Загружаем статьи при нажатии на кнопку «Загрузить еще»
+    * - Обновляем страницу в параметрах запроса
+    * - Рисуем статьи
+    * - Сброс значения при поиске по новому критерию
+    *
+    * https://newsapi.org/
+    * 4330ebfabc654a6992c2aa792f3173a3
+    * http://newsapi.org/v2/everything?q=cat&language=en&pageSize=5&page=1
+    */
+   
+   /*
  * - Пагинация
  *   - страница и кол-во на странице
  * - Загружаем статьи при сабмите формы
@@ -54,80 +68,51 @@ import './sass/main.scss';
  * http://newsapi.org/v2/everything?q=cat&language=en&pageSize=5&page=1
  */
 
-// import './sass/main.css';
-import NewsApiService from './JS/components/load-more-btn';
+import articlesTpl from './templates/articles.hbs';
+import './sass/main.scss';
+import NewsApiService from './JS/news-service';
+import LoadMoreBtn from './JS/components/load-more-btn';
 
 const refs = {
-    searchForm: document.querySelector('.js-search-form'),
-    articleContainer: document.querySelector('.ja-articles-container'),
-loadMoreBtn: document.querySelector('[data-acrion="load-more"]'),
+  searchForm: document.querySelector('.js-search-form'),
+  articlesContainer: document.querySelector('.js-articles-container'),
 };
-
+const loadMoreBtn = new LoadMoreBtn({
+  selector: '[data-action="load-more"]',
+  hidden: true,
+});
 const newsApiService = new NewsApiService();
-console.log(newsApiService);
 
-refs.searchForm.addEventListener('submit', onSaearch);
-refs.loadMoreBtn.addEventListener('click', onLoadMore);
-
-let searchQuery = '';
+refs.searchForm.addEventListener('submit', onSearch);
+loadMoreBtn.refs.button.addEventListener('click', fetchArticles);
 
 function onSearch(e) {
-    e.preventDefoult();
+  e.preventDefault();
 
-   newsApiService.query = e.currentTarget.elements.query.value;
+  newsApiService.query = e.currentTarget.elements.query.value;
 
-    newsApiService.fatchArticles();
+  if (newsApiService.query === '') {
+    return alert('Введи что-то нормальное');
+  }
+
+  loadMoreBtn.show();
+  newsApiService.resetPage();
+  clearArticlesContainer();
+  fetchArticles();
 }
 
-function onLoadMore() {
-    newsApiService.fatchArticles();
-
+function fetchArticles() {
+  loadMoreBtn.disable();
+  newsApiService.fetchArticles().then(articles => {
+    appendArticlesMarkup(articles);
+    loadMoreBtn.enable();
+  });
 }
 
-// import articlesTpl from './templates/articles.hbs';
-// import NewsApiService from './js/news-service';
-// import LoadMoreBtn from './js/components/load-more-btn';
+function appendArticlesMarkup(articles) {
+  refs.articlesContainer.insertAdjacentHTML('beforeend', articlesTpl(articles));
+}
 
-// const refs = {
-//   searchForm: document.querySelector('.js-search-form'),
-//   articlesContainer: document.querySelector('.js-articles-container'),
-// };
-// const loadMoreBtn = new LoadMoreBtn({
-//   selector: '[data-action="load-more"]',
-//   hidden: true,
-// });
-// const newsApiService = new NewsApiService();
-
-// refs.searchForm.addEventListener('submit', onSearch);
-// loadMoreBtn.refs.button.addEventListener('click', fetchArticles);
-
-// function onSearch(e) {
-//   e.preventDefault();
-
-//   newsApiService.query = e.currentTarget.elements.query.value;
-
-//   if (newsApiService.query === '') {
-//     return alert('Введи что-то нормальное');
-//   }
-
-//   loadMoreBtn.show();
-//   newsApiService.resetPage();
-//   clearArticlesContainer();
-//   fetchArticles();
-// }
-
-// function fetchArticles() {
-//   loadMoreBtn.disable();
-//   newsApiService.fetchArticles().then(articles => {
-//     appendArticlesMarkup(articles);
-//     loadMoreBtn.enable();
-//   });
-// }
-
-// function appendArticlesMarkup(articles) {
-//   refs.articlesContainer.insertAdjacentHTML('beforeend', articlesTpl(articles));
-// }
-
-// function clearArticlesContainer() {
-//   refs.articlesContainer.innerHTML = '';
-// }
+function clearArticlesContainer() {
+  refs.articlesContainer.innerHTML = '';
+}
